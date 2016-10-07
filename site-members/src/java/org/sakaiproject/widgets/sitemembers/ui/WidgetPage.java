@@ -1,11 +1,13 @@
 
 package org.sakaiproject.widgets.sitemembers.ui;
 
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
+import java.util.HashSet;
 import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
@@ -25,6 +27,7 @@ import org.sakaiproject.exception.IdUnusedException;
 import org.sakaiproject.profile2.logic.ProfileConnectionsLogic;
 import org.sakaiproject.profile2.model.BasicConnection;
 import org.sakaiproject.site.api.SiteService;
+import org.sakaiproject.site.api.Site;
 import org.sakaiproject.tool.api.ToolManager;
 import org.sakaiproject.user.api.User;
 import org.sakaiproject.user.api.UserDirectoryService;
@@ -67,6 +70,11 @@ public class WidgetPage extends WebPage {
 		log.debug("WidgetPage()");
 	}
 
+	// TODO: THIS SHOULD NOT BE HARDCODED
+	// This should be done by adding a new "hidden" permission and excluding users who have that
+	// permission
+	private final List<String> hiddenRoleNames = Arrays.asList(new String[]{"Editor", "Support", "Wallflower"});
+
 	@Override
 	public void onInitialize() {
 		super.onInitialize();
@@ -77,10 +85,24 @@ public class WidgetPage extends WebPage {
 		// get current site id
 		final String currentSiteId = this.toolManager.getCurrentPlacement().getContext();
 
-		// get members
-		final List<BasicConnection> instructors = getMembersWithRole(currentSiteId, SiteRole.INSTRUCTOR);
-		final List<BasicConnection> tas = getMembersWithRole(currentSiteId, SiteRole.TA);
-		final List<BasicConnection> students = getMembersWithRole(currentSiteId, SiteRole.STUDENT);
+		// get members who are hidden because they are in one of the special, hidden roles
+		Site currentSite = null;
+		try {
+			currentSite = this.siteService.getSite(currentSiteId);
+		} catch (final IdUnusedException e) {
+			e.printStackTrace();
+		}
+		if(currentSite == null) {
+			return;
+		}
+
+		Set<String> hiddenUserIds = new HashSet<String>();
+		for(String hiddenRoleName: this.hiddenRoleNames) {
+			hiddenUserIds.addAll(currentSite.getUsersHasRole(hiddenRoleName));
+		}
+		final List<BasicConnection> instructors = getMembersWithRole(currentSite, SiteRole.INSTRUCTOR, hiddenUserIds);
+		final List<BasicConnection> tas = getMembersWithRole(currentSite, SiteRole.TA, hiddenUserIds);
+		final List<BasicConnection> students = getMembersWithRole(currentSite, SiteRole.STUDENT, hiddenUserIds);
 
 		// note that none of these sections show if they are empty
 
@@ -154,37 +176,35 @@ public class WidgetPage extends WebPage {
 	 * @param role the role we want to get the users for
 	 * @return list of {@link BasicConnection} or an empty list if none
 	 */
-	final List<BasicConnection> getMembersWithRole(final String siteId, final SiteRole role) {
+	final List<BasicConnection> getMembersWithRole(final Site site, final SiteRole role,
+		final Set<String> hiddenUserIds) {
 
 		List<BasicConnection> rval = new ArrayList<>();
 
-		try {
-			final Set<String> userUuids = this.siteService.getSite(siteId).getUsersIsAllowed(role.getValue());
-			final List<User> users = this.userDirectoryService.getUsers(userUuids);
-			rval = this.connectionsLogic.getBasicConnections(users);
+		Set<String> userUuids = site.getUsersIsAllowed(role.getPermissionName());
+		userUuids.removeAll(hiddenUserIds);
+		final List<User> users = this.userDirectoryService.getUsers(userUuids);
+		rval = this.connectionsLogic.getBasicConnections(users);
 
-			// sort
-			Collections.sort(rval, new Comparator<BasicConnection>() {
+		// sort
+		Collections.sort(rval, new Comparator<BasicConnection>() {
 
-				@Override
-				public int compare(final BasicConnection o1, final BasicConnection o2) {
-					return new CompareToBuilder()
-							.append(o1.getOnlineStatus(), o2.getOnlineStatus())
-							.append(o1.getDisplayName(), o2.getDisplayName())
-							.toComparison();
-				}
+			@Override
+			public int compare(final BasicConnection o1, final BasicConnection o2) {
+				return new CompareToBuilder()
+						.append(o1.getOnlineStatus(), o2.getOnlineStatus())
+						.append(o1.getDisplayName(), o2.getDisplayName())
+						.toComparison();
+			}
 
-			});
+		});
 
-			// get slice
-			rval = rval
-					.stream()
-					.limit(this.maxUsers)
-					.collect(Collectors.toList());
+		// get slice
+		rval = rval
+				.stream()
+				.limit(this.maxUsers)
+				.collect(Collectors.toList());
 
-		} catch (final IdUnusedException e) {
-			e.printStackTrace();
-		}
 
 		return rval;
 	}

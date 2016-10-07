@@ -9,23 +9,26 @@ package org.sakaiproject.widgets.sitemembers;
  */
 public enum SiteRole {
 
+	// Note that these strings are actually the *permission* that determines whether the user
+	// has the given role.  Not all schools call these roles "student", "ta", "instructor", but
+	// the underlying permission cannot be changed
 	STUDENT("section.role.student"),
 	TA("section.role.ta"),
 	INSTRUCTOR("section.role.instructor");
 
-	private String value;
+	private String permissionName;
 
-	SiteRole(final String value) {
-		this.value = value;
+	SiteRole(final String permissionName) {
+		this.permissionName = permissionName;
 	}
 
 	/**
-	 * Get the Sakai value for the role
+	 * Get the Sakai permissionName for the role
 	 *
 	 * @return
 	 */
-	public String getValue() {
-		return this.value;
+	public String getPermissionName() {
+		return this.permissionName;
 	}
 
 }
