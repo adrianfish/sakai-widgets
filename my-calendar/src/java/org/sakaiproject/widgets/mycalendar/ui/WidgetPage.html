@@ -246,12 +246,15 @@ function getEventsDisplay(events) {
 	  /* Samigo */
 	  /http(s)?:\/\/[A-Za-z0-9:_.-]+(\/samigo-app\/servlet\/Login\?id=[A-Za-z0-9-]*)/ ,
 	  /*
-	     Example eSyncTraining URL
+	     Example URL for Adobe Connect via eSyncTraining
 	     http://sakai.noodle-partners.com:8080/egcint/redirect.jsf\?url=http://sakai.noodle-partners.com:8080/access/basiclti/site/sakai-demo/null/?ltiId=15169%26ltiAction=join%2673ad790e-b17e-46e2-89c3-412cb0167823
+	   */
+	  /http(s)?:\/\/[A-Za-z0-9:_.-]+\/egcint\/redirect.jsf\?url=http(s)?:\/\/[-A-Za-z0-9+&@#/%?=~_|!:,.;]*\/\?ltiId=\d*%26ltiAction=join%26[0-9A-Fa-f-]*/,
+	  /*
+	     Example URL for a direct link to Adobe Connect
+	     https://meet85612477.adobeconnect.com/personname/
 	  */
-	  /http(s)?:\/\/[A-Za-z0-9:_.-]+\/egcint\/redirect.jsf\?url=http(s)?:\/\/[^"' \t\r\n]*\/\?ltiId=\d*%26ltiAction=join%26[0-9A-Fa-f-]*/,
-	  /* Direct link to Adobe Connect */
-	  /http(s)?:\/\/[A-Za-z0-9.-]+\.adobeconnect\.com\/[^"' \t\r\n]*/
+	  /http(s)?:\/\/[A-Za-z0-9.-]+\.adobeconnect\.com\/[-A-Za-z0-9+&@#/%?=~_|!:,.;]*/
 	];
 	var nRegexps = regexps.length;
 	
@@ -278,7 +281,7 @@ function getEventsDisplay(events) {
 			}); 
 		}
 		
-		// samigo 'deeplink' or eSyncTraining meeting link
+		// samigo 'deeplink', eSyncTraining meeting link, or Adobe Connect link
 		// extract the URL from the description
 		var ed = evnt.descriptionFormatted;
 		if (ed.length > 0) {
