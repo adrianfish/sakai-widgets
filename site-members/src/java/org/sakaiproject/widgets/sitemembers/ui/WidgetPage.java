@@ -33,6 +33,7 @@ import org.sakaiproject.user.api.User;
 import org.sakaiproject.user.api.UserDirectoryService;
 import org.sakaiproject.widgets.sitemembers.SiteRole;
 import org.sakaiproject.widgets.sitemembers.ui.components.ConnectionsGrid;
+import org.sakaiproject.authz.cover.FunctionManager;
 
 import lombok.extern.apachecommons.CommonsLog;
 
@@ -59,6 +60,12 @@ public class WidgetPage extends WebPage {
 	@SpringBean(name = "org.sakaiproject.component.api.ServerConfigurationService")
 	private ServerConfigurationService serverConfigurationService;
 
+	public static final String SITE_MEMBERS_HIDE = "sitemembers.hide";
+
+	static {
+		registerFunction(SITE_MEMBERS_HIDE);
+	}
+
 	/**
 	 * Maximum number of users to show in each section
 	 *
@@ -69,11 +76,6 @@ public class WidgetPage extends WebPage {
 	public WidgetPage() {
 		log.debug("WidgetPage()");
 	}
-
-	// TODO: THIS SHOULD NOT BE HARDCODED
-	// This should be done by adding a new "hidden" permission and excluding users who have that
-	// permission
-	private final List<String> hiddenRoleNames = Arrays.asList(new String[]{"Editor", "Support", "Wallflower"});
 
 	@Override
 	public void onInitialize() {
@@ -96,10 +98,10 @@ public class WidgetPage extends WebPage {
 			return;
 		}
 
-		Set<String> hiddenUserIds = new HashSet<String>();
-		for(String hiddenRoleName: this.hiddenRoleNames) {
-			hiddenUserIds.addAll(currentSite.getUsersHasRole(hiddenRoleName));
-		}
+		// Get the list of hidden users
+		final Set<String> hiddenUserIds = currentSite.getUsersIsAllowed(SITE_MEMBERS_HIDE);
+
+		// Get the lists of the users of various types
 		final List<BasicConnection> instructors = getMembersWithRole(currentSite, SiteRole.INSTRUCTOR, hiddenUserIds);
 		final List<BasicConnection> tas = getMembersWithRole(currentSite, SiteRole.TA, hiddenUserIds);
 		final List<BasicConnection> students = getMembersWithRole(currentSite, SiteRole.STUDENT, hiddenUserIds);
@@ -205,8 +207,16 @@ public class WidgetPage extends WebPage {
 				.limit(this.maxUsers)
 				.collect(Collectors.toList());
 
-
 		return rval;
+	}
+
+	public final static void registerFunction(String function) {
+
+		List functions = FunctionManager.getRegisteredFunctions("sitemembers.");
+
+		if (!functions.contains(function)) {
+			FunctionManager.registerFunction(function);
+		}
 	}
 
 }
