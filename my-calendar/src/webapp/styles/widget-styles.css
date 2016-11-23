@@ -1,15 +1,5 @@
-.my-calendar-eventful-day > a { 
-    background-color: lightblue !important;
-    background-image: none !important;
-}
-
 li.my-calendar-event {
 	list-style-type: none;
-}
-
-.ui-datepicker-current-day > a {
-	border: 1px solid #1d5e74 !important;
-	color: black !important;
 }
 
 .my-calendar-event-heading {
@@ -40,8 +30,46 @@ div.ui-datepicker-inline {
 	margin: 0px auto;
 }
 
+div.Mrphs-toolBody--sakai-widget-my-calendar div.ui-datepicker {
+	border-color: white;
+}
+
+div.Mrphs-toolBody--sakai-widget-my-calendar table.ui-datepicker-calendar {
+	width: 60%;
+	margin: auto;
+}
+
+div.Mrphs-toolBody--sakai-widget-my-calendar div.ui-datepicker table.ui-datepicker-calendar td.ui-datepicker-current-day > a {
+	border: 1px solid #1d5e74;
+	color: black;
+}
+
+div.Mrphs-toolBody--sakai-widget-my-calendar div.ui-datepicker table.ui-datepicker-calendar td > a {
+	border-color: white;
+	background: white;
+	text-align: center;
+}
+
+div.Mrphs-toolBody--sakai-widget-my-calendar div.ui-datepicker table.ui-datepicker-calendar td > span {
+	border-color: white;
+	background: white;
+	text-align: center;
+}
+
+div.Mrphs-toolBody--sakai-widget-my-calendar div.ui-datepicker table.ui-datepicker-calendar td.my-calendar-eventful-day > a {
+    background: lightblue;
+}
+
+div.Mrphs-toolBody--sakai-widget-my-calendar div.ui-datepicker table.ui-datepicker-calendar td.ui-datepicker-today > a {
+	background: #fffa90;
+}
+
+div.Mrphs-toolBody--sakai-widget-my-calendar div.ui-datepicker table.ui-datepicker-calendar td.my-calendar-eventful-day.ui-datepicker-today > a {
+	background-color: lightgreen;
+}
+
 div.my-calendar-events-div {
-	margin-bottom: 9px
+	margin-bottom: 9px;
 }
 
 table.my-calendar-events {
