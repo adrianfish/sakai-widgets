@@ -207,7 +207,7 @@ function getEvents(date, singleDay) {
 	
 	// test for myworkspace (site starting with ~) to handle different call
 	var url;
-	if (currentSiteId.startsWith("~")) {
+	if (currentSiteId.substr(0,1) == "~") {
 		url = "/direct/calendar/my.json"
 	} else {
 		url = "/direct/calendar/site/" + currentSiteId + ".json";
