@@ -14,15 +14,20 @@ import org.apache.wicket.model.IModel;
 import org.apache.wicket.model.Model;
 import org.sakaiproject.profile2.model.BasicConnection;
 
+import lombok.extern.apachecommons.CommonsLog;
+
 /**
  * Generic grid panel that can be used to render a list of {@link BasicConnection}s as their images
  */
+@CommonsLog
 public class ConnectionsGrid extends Panel {
 
 	private static final long serialVersionUID = 1L;
+	private int cols = 4;
 
-	public ConnectionsGrid(final String id, final IModel<List<? extends BasicConnection>> iModel) {
+	public ConnectionsGrid(final String id, final IModel<List<? extends BasicConnection>> iModel, int cols) {
 		super(id, iModel);
+		this.cols = cols;
 	}
 
 	@Override
@@ -31,6 +36,8 @@ public class ConnectionsGrid extends Panel {
 
 		@SuppressWarnings("unchecked")
 		final List<BasicConnection> connections = (List<BasicConnection>) getDefaultModelObject();
+		final int nUsers = connections.size();
+		int rows = (nUsers+cols-1)/cols; /* round up number of rows */
 
 		final ListDataProvider<BasicConnection> dataProvider = new ListDataProvider<BasicConnection>(connections);
 
@@ -61,8 +68,10 @@ public class ConnectionsGrid extends Panel {
 			}
 		};
 
-		gridView.setRows(8);
-		gridView.setColumns(4);
+		/* handle case where nUsers=0 */
+		if(rows <=0) {rows = 1;}
+		gridView.setRows(rows);
+		gridView.setColumns(cols);
 
 		add(gridView);
 
