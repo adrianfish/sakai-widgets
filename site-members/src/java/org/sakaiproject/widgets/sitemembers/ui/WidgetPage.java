@@ -67,11 +67,13 @@ public class WidgetPage extends WebPage {
 	}
 
 	/**
-	 * Maximum number of users to show in each section
 	 *
-	 * Can be overridden via: widget.sitemembers.maxusers=30
+	 * Can be overridden via:
+	 * widget.sitemembers.maxusers=60
+	 * widget.sitemembers.cols=4
 	 */
-	int maxUsers = 30;
+	int maxUsers = 60;
+	int cols = 4;
 
 	public WidgetPage() {
 		log.debug("WidgetPage()");
@@ -81,8 +83,9 @@ public class WidgetPage extends WebPage {
 	public void onInitialize() {
 		super.onInitialize();
 
-		// get max profiles
+		// get maxUsers, cols
 		this.maxUsers = this.serverConfigurationService.getInt("widget.sitemembers.maxusers", this.maxUsers);
+		this.cols = this.serverConfigurationService.getInt("widget.sitemembers.cols", this.cols);
 
 		// get current site id
 		final String currentSiteId = this.toolManager.getCurrentPlacement().getContext();
@@ -109,7 +112,7 @@ public class WidgetPage extends WebPage {
 		// note that none of these sections show if they are empty
 
 		// add instructors grid
-		add(new ConnectionsGrid("instructors", Model.ofList(instructors)) {
+		add(new ConnectionsGrid("instructors", Model.ofList(instructors), cols) {
 			private static final long serialVersionUID = 1L;
 
 			@SuppressWarnings("unchecked")
@@ -120,7 +123,7 @@ public class WidgetPage extends WebPage {
 		});
 
 		// add TAs grid
-		add(new ConnectionsGrid("tas", Model.ofList(tas)) {
+		add(new ConnectionsGrid("tas", Model.ofList(tas), cols) {
 			private static final long serialVersionUID = 1L;
 
 			@SuppressWarnings("unchecked")
@@ -131,7 +134,7 @@ public class WidgetPage extends WebPage {
 		});
 
 		// add students grid
-		add(new ConnectionsGrid("members", Model.ofList(students)) {
+		add(new ConnectionsGrid("members", Model.ofList(students), cols) {
 			private static final long serialVersionUID = 1L;
 
 			@SuppressWarnings("unchecked")
