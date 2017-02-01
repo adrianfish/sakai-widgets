@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.stream.Collectors;
+import java.io.Serializable;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -26,6 +27,7 @@ import org.sakaiproject.component.api.ServerConfigurationService;
 import org.sakaiproject.exception.IdUnusedException;
 import org.sakaiproject.profile2.logic.ProfileConnectionsLogic;
 import org.sakaiproject.profile2.model.BasicConnection;
+import org.sakaiproject.profile2.util.ProfileConstants;
 import org.sakaiproject.site.api.SiteService;
 import org.sakaiproject.site.api.Site;
 import org.sakaiproject.tool.api.ToolManager;
@@ -39,6 +41,8 @@ import lombok.extern.apachecommons.CommonsLog;
 
 /**
  * Main page for the Site Members widget
+ * Note: Far too much of this is too similar to the site-members widget and the 
+ * two should be refactored and combined.
  */
 @CommonsLog
 public class WidgetPage extends WebPage {
@@ -64,6 +68,16 @@ public class WidgetPage extends WebPage {
 
 	static {
 		registerFunction(SITE_MEMBERS_HIDE);
+	}
+
+	/**
+	 * Class that contains a single site member (just the part needed)
+	 */
+	public static class GridPerson implements Serializable{
+		public String uuid;
+		public String displayName;
+		public String role;
+		public int onlineStatus;
 	}
 
 	/**
@@ -101,49 +115,33 @@ public class WidgetPage extends WebPage {
 			return;
 		}
 
+		boolean isCourse = currentSite.isType("course");
+
 		// Get the list of hidden users
 		final Set<String> hiddenUserIds = currentSite.getUsersIsAllowed(SITE_MEMBERS_HIDE);
 
 		// Get the lists of the users of various types
-		final List<BasicConnection> instructors = getMembersWithRole(currentSite, SiteRole.INSTRUCTOR, hiddenUserIds);
-		final List<BasicConnection> tas = getMembersWithRole(currentSite, SiteRole.TA, hiddenUserIds);
-		final List<BasicConnection> students = getMembersWithRole(currentSite, SiteRole.STUDENT, hiddenUserIds);
+		final List<GridPerson> instructors = getMembersWithRole(currentSite, SiteRole.INSTRUCTOR, hiddenUserIds);
+		final List<GridPerson> tas = getMembersWithRole(currentSite, SiteRole.TA, hiddenUserIds);
+		final List<GridPerson> students = getMembersWithRole(currentSite, SiteRole.STUDENT, hiddenUserIds);
+                final List<GridPerson> finalList = new ArrayList<GridPerson>();
 
-		// note that none of these sections show if they are empty
+		// Concat 3 list into 1
+		finalList.addAll(instructors);
+		finalList.addAll(tas);
+		finalList.addAll(students);
 
 		// add instructors grid
-		add(new ConnectionsGrid("instructors", Model.ofList(instructors), cols) {
+		add(new ConnectionsGrid("roster", Model.ofList(finalList), cols, isCourse) {
 			private static final long serialVersionUID = 1L;
 
 			@SuppressWarnings("unchecked")
 			@Override
 			public boolean isVisible() {
-				return !((List<BasicConnection>) getDefaultModelObject()).isEmpty();
+				return !((List<GridPerson>) getDefaultModelObject()).isEmpty();
 			}
 		});
-
-		// add TAs grid
-		add(new ConnectionsGrid("tas", Model.ofList(tas), cols) {
-			private static final long serialVersionUID = 1L;
-
-			@SuppressWarnings("unchecked")
-			@Override
-			public boolean isVisible() {
-				return !((List<BasicConnection>) getDefaultModelObject()).isEmpty();
-			}
-		});
-
-		// add students grid
-		add(new ConnectionsGrid("members", Model.ofList(students), cols) {
-			private static final long serialVersionUID = 1L;
-
-			@SuppressWarnings("unchecked")
-			@Override
-			public boolean isVisible() {
-				return !((List<BasicConnection>) getDefaultModelObject()).isEmpty();
-			}
-		});
-
+                 
 	}
 
 	@Override
@@ -179,25 +177,27 @@ public class WidgetPage extends WebPage {
 	 *
 	 * @param siteId the site id to get the members for
 	 * @param role the role we want to get the users for
-	 * @return list of {@link BasicConnection} or an empty list if none
+	 * @return list of {@link GridPerson} or an empty list if none
 	 */
-	final List<BasicConnection> getMembersWithRole(final Site site, final SiteRole role,
+	final List<GridPerson> getMembersWithRole(final Site site, final SiteRole role,
 		final Set<String> hiddenUserIds) {
 
-		List<BasicConnection> rval = new ArrayList<>();
+		List<BasicConnection> userList = new ArrayList<>();
 
 		Set<String> userUuids = site.getUsersIsAllowed(role.getPermissionName());
 		userUuids.removeAll(hiddenUserIds);
 		final List<User> users = this.userDirectoryService.getUsers(userUuids);
-		rval = this.connectionsLogic.getBasicConnections(users);
-
+		userList = this.connectionsLogic.getBasicConnections(users);
 		// sort
-		Collections.sort(rval, new Comparator<BasicConnection>() {
+		Collections.sort(userList, new Comparator<BasicConnection>() {
 
 			@Override
 			public int compare(final BasicConnection o1, final BasicConnection o2) {
+				// Here we sort the users by their online status. Annoyingly, the constants are
+				// 0: offline, 1: online, 2:away, so we can't just sort by that.
 				return new CompareToBuilder()
-						.append(o1.getOnlineStatus(), o2.getOnlineStatus())
+						.append(o1.getOnlineStatus()==ProfileConstants.ONLINE_STATUS_OFFLINE?2:1,
+								o2.getOnlineStatus()==ProfileConstants.ONLINE_STATUS_OFFLINE?2:1)
 						.append(o1.getDisplayName(), o2.getDisplayName())
 						.toComparison();
 			}
@@ -205,10 +205,22 @@ public class WidgetPage extends WebPage {
 		});
 
 		// get slice
-		rval = rval
+		userList = userList
 				.stream()
 				.limit(this.maxUsers)
 				.collect(Collectors.toList());
+
+		List<GridPerson> rval = new ArrayList<>();
+
+		for (BasicConnection person : userList) {
+			GridPerson gridPerson = new GridPerson();
+			gridPerson.uuid = person.getUuid();
+			gridPerson.displayName = person.getDisplayName();
+			gridPerson.role = role.toString();
+			gridPerson.onlineStatus = person.getOnlineStatus();
+
+			rval.add(gridPerson);
+		}
 
 		return rval;
 	}
