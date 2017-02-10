@@ -1,14 +1,31 @@
 li.my-calendar-event {
 	list-style-type: none;
 }
-
-.my-calendar-event-heading {
-	margin-left: 2px;
-	text-align: center;
-	font-weight: bold;
-	color: #777;
+.ui-datepicker-title {
+	font-weight:500 !important;
+	font-size:21px !important;
+	line-height: 2.25em !important;
 }
-
+.my-calendar-event-heading {
+	text-align: center;
+	font-weight: 500;
+	font-size: 18px;
+	color: #777;
+	padding:15px;
+	border-top:1px solid lightgrey;
+}
+.fa-arrow-circle-o-left:before, .fa-arrow-circle-o-right:before {
+	font-size:18px;
+	position: relative;
+	bottom:1px;
+	padding:0 4px;
+}
+.ui-datepicker-prev.ui-corner-all, .ui-datepicker-next.ui-corner-all{
+	top:12px;
+}
+.ui-datepicker-prev.ui-corner-all.ui-state-hover.ui-datepicker-prev-hover, .ui-datepicker-next.ui-corner-all.ui-state-hover.ui-datepicker-next-hover{
+	top:12px;
+}
 .left-arrow, .right-arrow {
 	cursor: pointer;
 }
@@ -24,24 +41,35 @@ li.my-calendar-event {
 .my-calendar-event-type {
 	font-weight: bold;
 }
+.Mrphs-container.Mrphs-sakai-widget-my-calendar {
+	border:1px solid lightgrey;
+}
 
 div.ui-datepicker-inline {
 	width: 100%;
 	margin: 0px auto;
+	display: block;
+    padding: 0 0 10px;
 }
-
+.ui-datepicker .ui-datepicker-header {
+	border-radius: 0;
+}
 div.Mrphs-toolBody--sakai-widget-my-calendar div.ui-datepicker {
 	border-color: white;
 }
 
 div.Mrphs-toolBody--sakai-widget-my-calendar table.ui-datepicker-calendar {
-	width: 60%;
-	margin: auto;
+	width: 100%;
+	margin: 0 auto;
 }
 
 div.Mrphs-toolBody--sakai-widget-my-calendar div.ui-datepicker table.ui-datepicker-calendar td.ui-datepicker-current-day > a {
 	border: 1px solid #1d5e74;
 	color: black;
+	border-radius:50%;
+	width:27px;
+	display:block;
+	margin:0 auto;
 }
 
 div.Mrphs-toolBody--sakai-widget-my-calendar div.ui-datepicker table.ui-datepicker-calendar td > a {
@@ -55,21 +83,32 @@ div.Mrphs-toolBody--sakai-widget-my-calendar div.ui-datepicker table.ui-datepick
 	background: white;
 	text-align: center;
 }
-
 div.Mrphs-toolBody--sakai-widget-my-calendar div.ui-datepicker table.ui-datepicker-calendar td.my-calendar-eventful-day > a {
-    background: lightblue;
+    color: black;
+	background-color: lightblue;
+	border-radius:50%;
+	width:27px;
+	display:block;
+	margin:0 auto;
 }
 
 div.Mrphs-toolBody--sakai-widget-my-calendar div.ui-datepicker table.ui-datepicker-calendar td.ui-datepicker-today > a {
-	background: #fffa90;
+	border: 1px solid #1d5e74;
+	color: white;
+	display:block;
+	margin:0 auto;
+	background-color:black;
+	border-radius:50%;
+	width:27px;
 }
 
 div.Mrphs-toolBody--sakai-widget-my-calendar div.ui-datepicker table.ui-datepicker-calendar td.my-calendar-eventful-day.ui-datepicker-today > a {
-	background-color: lightgreen;
+	background-color: darkblue;
 }
 
 div.my-calendar-events-div {
 	margin-bottom: 9px;
+	padding-left:22px;
 }
 
 table.my-calendar-events {
@@ -78,6 +117,16 @@ table.my-calendar-events {
 
 table.my-calendar-event {
 	margin: 0 auto;
-	text-align: left;
 }
 
+@media screen and (min-width: 1100px) {
+	.ui-datepicker td {
+		width:120px;
+	}
+}
+
+@media screen and (min-width:0px) {
+	.ui-datepicker td {
+		width:80px;
+	}
+}
