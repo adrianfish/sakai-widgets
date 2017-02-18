@@ -7,61 +7,98 @@ import org.apache.wicket.AttributeModifier;
 import org.apache.wicket.markup.html.link.ExternalLink;
 import org.apache.wicket.markup.html.panel.EmptyPanel;
 import org.apache.wicket.markup.html.panel.Panel;
+import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.markup.repeater.Item;
 import org.apache.wicket.markup.repeater.data.GridView;
 import org.apache.wicket.markup.repeater.data.ListDataProvider;
 import org.apache.wicket.model.IModel;
 import org.apache.wicket.model.Model;
-import org.sakaiproject.profile2.model.BasicPerson;
+import org.apache.wicket.model.ResourceModel;
+import org.sakaiproject.profile2.util.ProfileConstants;
+
+import org.sakaiproject.widgets.myconnections.ui.WidgetPage;
+import lombok.extern.apachecommons.CommonsLog;
 
 /**
- * Generic grid panel that can be used to render a list of {@link BasicPerson}s as their images
+ * Generic grid panel that can be used to render a list of {@link WidgetPage.GridPerson}s as their images
  */
+@CommonsLog
 public class ConnectionsGrid extends Panel {
 
 	private static final long serialVersionUID = 1L;
+	private int cols = 4;
 
-	public ConnectionsGrid(final String id, final IModel<List<? extends BasicPerson>> iModel) {
+	public ConnectionsGrid(final String id, final IModel<List<? extends WidgetPage.GridPerson>> iModel, int cols) {
 		super(id, iModel);
-	}
+		this.cols = cols;
+		}
 
 	@Override
 	public void onInitialize() {
 		super.onInitialize();
 
 		@SuppressWarnings("unchecked")
-		final List<BasicPerson> connections = (List<BasicPerson>) getDefaultModelObject();
+		final List<WidgetPage.GridPerson> connections = (List<WidgetPage.GridPerson>) getDefaultModelObject();
 
-		final ListDataProvider<BasicPerson> dataProvider = new ListDataProvider<BasicPerson>(connections);
+		final int nUsers = connections.size();
+		int rows = (nUsers+cols-1)/cols; /* round up number of rows */
 
-		final GridView<BasicPerson> gridView = new GridView<BasicPerson>("rows", dataProvider) {
+		final ListDataProvider<WidgetPage.GridPerson> dataProvider = new ListDataProvider<WidgetPage.GridPerson>(connections);
+
+		final GridView<WidgetPage.GridPerson> gridView = new GridView<WidgetPage.GridPerson>("rows", dataProvider) {
 			private static final long serialVersionUID = 1L;
 
 			@Override
-			protected void populateItem(final Item<BasicPerson> item) {
-				final BasicPerson connection = item.getModelObject();
-				final ProfileThumbnail img = new ProfileThumbnail("img", Model.of(connection.getUuid()));
+			protected void populateItem(final Item<WidgetPage.GridPerson> item) {
+				final WidgetPage.GridPerson connection = item.getModelObject();
+				final ProfileThumbnail img = new ProfileThumbnail("img", Model.of(connection.uuid));
 				
-				final String url = "/direct/my/profile-view/" + connection.getUuid();
+				final String url = "/direct/my/profile-view/" + connection.uuid;
 				
 				img.add(new AttributeModifier("href", url));
 				img.add(new AttributeModifier("target", "_top"));
 				item.add(img);
 				
 				//name link
-				item.add(new ExternalLink("name", url, connection.getDisplayName()));
+				item.add(new ExternalLink("name", url, connection.displayName));
+
+				//role
+				if (connection.role == "request"){
+					ResourceModel rm = new ResourceModel("heading.request");
+					item.add(new Label("role", rm.getObject()));
+				} else {
+					item.add(new EmptyPanel("role"));
+				}
+
+				String t = "online-status";
+				if(connection.onlineStatus  == ProfileConstants.ONLINE_STATUS_ONLINE){
+					t += " online";
+				}
+				else if(connection.onlineStatus == ProfileConstants.ONLINE_STATUS_AWAY){
+					t += " away";
+				} else {
+					t += " offline";
+				}
+
+				Label lbl = new Label("online_status", "");
+				lbl.add(new AttributeModifier("class",t));
+
+				item.add(lbl);
 			}
 
 			@Override
-			protected void populateEmptyItem(final Item<BasicPerson> item) {
+			protected void populateEmptyItem(final Item<WidgetPage.GridPerson> item) {
 				item.add(new EmptyPanel("img"));
 				item.add(new EmptyPanel("name"));
+				item.add(new EmptyPanel("role"));
 				item.setVisible(false);
 			}
 		};
 
-		gridView.setRows(8);
-		gridView.setColumns(4);
+		/* handle case where nUsers=0 */
+		if(rows <=0) {rows = 1;}
+		gridView.setRows(rows);
+		gridView.setColumns(cols);
 
 		add(gridView);
 
