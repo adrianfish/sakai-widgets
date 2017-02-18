@@ -1,10 +1,15 @@
 
 package org.sakaiproject.widgets.myconnections.ui;
 
+import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
 import java.util.stream.Collectors;
+import java.io.Serializable;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -25,7 +30,8 @@ import org.apache.wicket.spring.injection.annot.SpringBean;
 import org.sakaiproject.component.api.ServerConfigurationService;
 import org.sakaiproject.profile2.logic.ProfileConnectionsLogic;
 import org.sakaiproject.profile2.model.BasicConnection;
-import org.sakaiproject.profile2.model.Person;
+import org.sakaiproject.profile2.util.ProfileConstants;
+import org.sakaiproject.profile2.model.BasicPerson;
 import org.sakaiproject.tool.api.SessionManager;
 import org.sakaiproject.widgets.myconnections.ui.components.ConnectionsGrid;
 
@@ -33,6 +39,8 @@ import lombok.extern.apachecommons.CommonsLog;
 
 /**
  * Main page for the My Connections widget
+ * Note: Far too much of this is too similar to the site-members widget and the 
+ * two should be refactored and combined.
  */
 @CommonsLog
 public class WidgetPage extends WebPage {
@@ -49,11 +57,23 @@ public class WidgetPage extends WebPage {
 	private ServerConfigurationService serverConfigurationService;
 
 	/**
-	 * Maximum number of profiles to show.
-	 *
-	 * Can be overridden via: widget.myconnections.maxusers=30
+	 * Class that contains a single site member (just the part needed)
 	 */
-	int maxUsers = 30;
+	public static class GridPerson implements Serializable{
+		public String uuid;
+		public String displayName;
+		public String role;
+		public int onlineStatus;
+	}
+
+	/**
+	 *
+	 * Can be overridden via:
+	 * widget.myconnections.maxusers=60
+	 * widget.myconnections.cols=4
+	 */
+	int maxUsers = 60;
+	int cols = 4;
 
 	public WidgetPage() {
 		log.debug("WidgetPage()");
@@ -63,32 +83,23 @@ public class WidgetPage extends WebPage {
 	public void onInitialize() {
 		super.onInitialize();
 
-		// get max users
+		// get maxUsers, cols
 		this.maxUsers = this.serverConfigurationService.getInt("widget.myconnections.maxusers", this.maxUsers);
+		this.cols = this.serverConfigurationService.getInt("widget.myconnections.cols", this.cols);
 
 		// get current user
 		final String currentUserUuid = this.sessionManager.getCurrentSessionUserId();
 		
 		// get requests
-		List<Person> requests = this.connectionsLogic.getConnectionRequestsForUser(currentUserUuid);
+		List<? extends BasicPerson> requests = this.connectionsLogic.getConnectionRequestsForUser(currentUserUuid);
 		
 		// sort
 		Collections.sort(requests);
-		
-		// add requests grid
-		if(!requests.isEmpty()) {
-			add(new Label("requestsLabel", new ResourceModel("label.requests")));
-			add(new ConnectionsGrid("requests", Model.ofList(requests)));
-			add(new Label("connectionsLabel", new ResourceModel("label.connections")));
-		} else {
-			add(new EmptyPanel("requestsLabel"));
-			add(new EmptyPanel("requests"));
-			add(new EmptyPanel("connectionsLabel"));
-		}
-		
-		
+
+		List<GridPerson> requestGridPersons = sliceAndFill(requests, "request", false);
+
 		// get connections, sort and slice
-		List<BasicConnection> connections = this.connectionsLogic.getBasicConnectionsForUser(currentUserUuid);
+		List<? extends BasicConnection> connections = this.connectionsLogic.getBasicConnectionsForUser(currentUserUuid);
 
 		// sort
 		Collections.sort(connections, new Comparator<BasicConnection>() {
@@ -96,22 +107,24 @@ public class WidgetPage extends WebPage {
 			@Override
 			public int compare(final BasicConnection o1, final BasicConnection o2) {
 				return new CompareToBuilder()
-						.append(o1.getOnlineStatus(), o2.getOnlineStatus())
+						.append(o1.getOnlineStatus()==ProfileConstants.ONLINE_STATUS_OFFLINE?2:1,
+								o2.getOnlineStatus()==ProfileConstants.ONLINE_STATUS_OFFLINE?2:1)
 						.append(o1.getDisplayName(), o2.getDisplayName())
 						.toComparison();
 			}
 
 		});
 
-		// get slice
-		connections = connections
-				.stream()
-				.limit(this.maxUsers)
-				.collect(Collectors.toList());
-		
+		List<GridPerson> connectionGridPersons = sliceAndFill(connections, "connection", true);
+
+		// concatenate
+		final List<GridPerson> finalList = new ArrayList<GridPerson>();
+		finalList.addAll(requestGridPersons);
+		finalList.addAll(connectionGridPersons);
+
 		// add connections grid or label
-		if (!connections.isEmpty()) {
-			add(new ConnectionsGrid("connections", Model.ofList(connections)));
+		if (!finalList.isEmpty()) {
+			add(new ConnectionsGrid("connections", Model.ofList(finalList), cols));
 		} else {
 			add(new Label("connections", new ResourceModel("label.noconnections"))
 					.add(new AttributeAppender("class", "instruction")));
@@ -145,4 +158,22 @@ public class WidgetPage extends WebPage {
 		// NOTE: All libraries apart from jQuery and Wicket Event must be rendered inline with the application. See WidgetPage.html.
 	}
 
+	private List<GridPerson> sliceAndFill(List<? extends BasicPerson> l, String role, boolean canGetStatus){
+		List<GridPerson> rval = new ArrayList<>();
+		List<BasicPerson> shortList = l
+				.stream()
+				.limit(this.maxUsers)
+				.collect(Collectors.toList());
+		for (BasicPerson person : shortList) {
+			GridPerson gridPerson = new GridPerson();
+			gridPerson.uuid = person.getUuid();
+			gridPerson.displayName = person.getDisplayName();
+			gridPerson.role = role;
+			gridPerson.onlineStatus = canGetStatus ? ((BasicConnection)person).getOnlineStatus() : ProfileConstants.ONLINE_STATUS_OFFLINE;
+
+			rval.add(gridPerson);
+		}
+
+		return rval;
+	}
 }
