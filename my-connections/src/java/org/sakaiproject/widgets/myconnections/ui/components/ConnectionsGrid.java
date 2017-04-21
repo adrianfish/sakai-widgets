@@ -51,16 +51,20 @@ public class ConnectionsGrid extends Panel {
 			@Override
 			protected void populateItem(final Item<WidgetPage.GridPerson> item) {
 				final WidgetPage.GridPerson connection = item.getModelObject();
-				final ProfileThumbnail img = new ProfileThumbnail("img", Model.of(connection.uuid));
+				final String connection_uuid = connection.uuid;
+				final ProfileThumbnail img = new ProfileThumbnail("img", Model.of(connection_uuid));
 				
-				final String url = "/direct/my/profile-view/" + connection.uuid;
+				final String url = "javascript:;";
 				
 				img.add(new AttributeModifier("href", url));
 				img.add(new AttributeModifier("target", "_top"));
+				img.add(new AttributeModifier("data-user-id", connection_uuid));
 				item.add(img);
 				
 				//name link
-				item.add(new ExternalLink("name", url, connection.displayName));
+				ExternalLink l = new ExternalLink("name", url, connection.displayName);
+				l.add(new AttributeModifier("data-user-id", connection_uuid));
+				item.add(l);
 
 				//role
 				if (connection.role == "request"){
