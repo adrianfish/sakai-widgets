@@ -42,9 +42,9 @@
 </script>
 
 <script id="my-calendar-heading-template" type="text/x-jsrender">
-		<i class="fa fa-arrow-circle-o-left fa-lg left-arrow" aria-hidden="true"></i>
-		{{:heading}}
-		<i class="fa fa-arrow-circle-o-right fa-lg right-arrow" aria-hidden="true"></i>
+		<div class="fa fa-chevron-circle-left left-arrow" aria-hidden="true"></div>
+        <div id="my-calendar-event-heading-text">{{:heading}}</div>
+		<div class="fa fa-chevron-circle-right right-arrow" aria-hidden="true"></div>
 </script>
 
 
@@ -83,6 +83,8 @@ $(document).ready(function() {
 	            return [true, '', ''];
 	        } 
 	    },
+		nextText: '',
+		prevText: '',
 		onSelect: function(date) {
 			// format the date
 			var formattedDate = getISO8601Date(date);
